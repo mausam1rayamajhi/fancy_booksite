@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fancy Book Shelf</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <div class="brand">📚 Fancy Book Shelf</div>
+      <form id="searchForm" class="search" autocomplete="off">
+        <input id="searchInput" type="text" placeholder="Search by title or author..." />
+        <button type="submit" aria-label="Search" id="searchBtn">Search</button>
+        <button type="button" id="showAllBtn" title="Show all books">Show All</button>
+      </form>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="addBook" class="panel">
+      <h1 class="page-title">Add a Book <span class="badge">with cover</span></h1>
+      <div class="grid-2">
+        <div>
+          <label for="bookTitle">Title <span class="req">*</span></label>
+          <input type="text" id="bookTitle" placeholder="e.g., Clean Code" required />
+        </div>
+        <div>
+          <label for="authorName">Author <span class="req">*</span></label>
+          <input type="text" id="authorName" placeholder="e.g., Robert C. Martin" required />
+        </div>
+        <div>
+          <label for="publicationYear">Publication Year <span class="req">*</span></label>
+          <input type="number" id="publicationYear" placeholder="e.g., 2008" min="0" step="1" required />
+        </div>
+        <div>
+          <label for="imageUrl">Cover Image URL (optional)</label>
+          <input type="url" id="imageUrl" placeholder="https://..." />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="addBtn" type="button">Add Book</button>
+        <span id="formHelp" class="muted">* Title, Author, and Year are required</span>
+      </div>
+    </section>
+
+    <section>
+      <h1 class="page-title">Book Shelf <span class="badge">Live</span></h1>
+      <div id="resultCount" class="muted" style="margin:8px 0 12px; opacity:.9;"></div>
+      <div id="shelf" class="shelf"></div>
+    </section>
+  </main>
+
+  <!-- Book Details Modal -->
+  <div id="bookModal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-close></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal__close" title="Close" data-close>&times;</button>
+
+      <div class="modal__header">
+        <img id="modalCover" alt="" class="modal__cover" />
+        <div>
+          <h2 id="modalTitle" class="modal__title"></h2>
+          <div id="modalAuthors" class="modal__authors muted"></div>
+          <div id="modalYear" class="modal__year muted"></div>
+        </div>
+      </div>
+
+      <div class="modal__body">
+        <!-- Adding review first -->
+        <form id="modalReviewForm" class="review-form" autocomplete="off">
+          <div class="review-form-grid">
+            <input type="text" name="reviewer" placeholder="Your name" />
+            <input type="number" min="1" max="5" step="1" name="rating" placeholder="Rating 1–5" />
+            <textarea name="text" rows="3" placeholder="Write your review..."></textarea>
+            <button type="submit">Add Review</button>
+          </div>
+        </form>
+
+        <div class="reviews-header">
+          <h3>Reviews</h3>
+          <button id="modalToggleAll" type="button" class="btn-link" style="display:none">Show all</button>
+        </div>
+
+        <div id="modalReviews" class="reviews"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading JS (must be after DOM; 'defer' ensures it runs post-parse) -->
+  <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</body>
+</html>

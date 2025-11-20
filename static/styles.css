@@ -1,0 +1,266 @@
+/* Defining theme variables */
+:root{
+  --bg: #0b1620;
+  --bg-2: #0e1d29;
+  --card: rgba(255,255,255,0.06);
+  --card-border: rgba(255,255,255,0.12);
+  --text: #e9f6f2;
+  --muted: #b7d8d0;
+  --accent: #22c1c3;
+  --accent-2: #2ae98a;
+  --accent-3: #08aeea;
+  --shadow: 0 10px 30px rgba(0,0,0,0.35);
+  --radius-lg: 18px;
+  --radius-sm: 12px;
+}
+
+/* Resetting box model */
+*{ box-sizing: border-box; }
+
+/* Setting base typography and layered backgrounds */
+html,body{
+  height:100%; margin:0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(1200px 800px at -10% -20%, rgba(34,193,195,0.15), transparent 60%),
+    radial-gradient(900px 700px at 110% 10%, rgba(42,233,138,0.12), transparent 60%),
+    linear-gradient(180deg, var(--bg), var(--bg-2));
+}
+
+/* Pinning nav and adding glassy backdrop */
+.nav{
+  position: sticky; top:0; z-index: 10; backdrop-filter: blur(10px);
+  background: linear-gradient(90deg, rgba(34,193,195,0.12), rgba(42,233,138,0.12));
+  border-bottom: 1px solid var(--card-border);
+}
+
+/* Constraining nav width and aligning content */
+.nav-inner{
+  max-width: 1080px; margin: 0 auto; padding: 12px 20px;
+  display:flex; gap:8px; align-items:center; justify-content:space-between;
+}
+
+/* Styling brand with gradient text */
+.brand{
+  font-weight: 700; letter-spacing: 0.3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3));
+  -webkit-background-clip:text; background-clip:text; color: transparent;
+}
+
+/* Laying out search controls */
+.search{ display:flex; gap:8px; }
+
+/* Polishing search input */
+.search input{
+  padding: 10px 12px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06); color: var(--text);
+}
+
+/* Emphasizing primary search actions */
+.search button{
+  padding:10px 14px; border-radius: 999px; border:0;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2) 60%, var(--accent-3));
+  color:#012326; font-weight:700; cursor:pointer;
+}
+
+/* Differentiating Show All button */
+.search button#showAllBtn{
+  background: rgba(255,255,255,0.12);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.18);
+}
+
+/* Providing hover feedback */
+.search button#showAllBtn:hover{
+  background: rgba(255,255,255,0.18);
+}
+
+/* Centering page content */
+.container{ max-width: 1080px; margin: 28px auto 80px; padding: 0 20px; }
+
+/* Framing panels with glass card style */
+.panel{
+  background: var(--card); border:1px solid var(--card-border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 18px;
+}
+
+/* Aligning section titles and badges */
+.page-title{ display:flex; align-items:center; gap:10px; }
+
+/* Highlighting small status labels */
+.badge{
+  font-size: .75rem; padding:4px 10px; border-radius:999px;
+  background: linear-gradient(135deg, #93f5b2, #65e0ff);
+  color:#003036; border:1px solid rgba(255,255,255,0.35);
+}
+
+/* Creating two-column form grid */
+.grid-2{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:14px; }
+
+/* Softening label tone */
+label{ font-size: .9rem; color: var(--muted); display:block; margin: 4px 0; }
+
+/* Marking required fields */
+.req{ color: #ffd1d1; }
+
+/* Styling inputs for glass effect */
+input{
+  width:100%; padding:12px 14px; border-radius: var(--radius-sm);
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06); color: var(--text);
+}
+
+/* Surfacing invalid states */
+input:invalid{ outline: 2px solid rgba(255, 116, 116, 0.5); }
+
+/* Grouping form actions */
+.actions{ margin-top: 10px; display:flex; gap:10px; align-items:center; }
+
+/* Accenting Add Book button */
+button#addBtn{
+  padding: 12px 18px; border:0; border-radius:999px; font-weight:700; color:#012326;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2) 60%, var(--accent-3));
+  box-shadow: 0 10px 24px rgba(34,193,195,0.28), inset 0 -2px 8px rgba(0,0,0,0.15);
+  cursor:pointer;
+}
+
+/* Muting helper text */
+.muted { color: var(--muted); font-size: .9rem; }
+
+/* Building responsive card grid */
+.shelf{
+  display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 18px;
+}
+
+/* Designing book card container */
+.card{
+  position:relative; background: var(--card); border: 1px solid var(--card-border);
+  border-radius: 16px; overflow: hidden; box-shadow: var(--shadow);
+  transition: transform .12s ease, box-shadow .2s ease;
+  cursor: pointer;
+}
+
+/* Elevating cards on hover */
+.card:hover{ transform: translateY(-2px); box-shadow: 0 16px 34px rgba(0,0,0,0.42); }
+
+/* Fitting cover images */
+.cover{ width:100%; height: 260px; object-fit: cover; display:block; }
+
+/* Spacing card metadata */
+.card .meta{ padding: 10px 12px 14px; }
+
+/* Emphasizing title and supporting author/year */
+.title{ font-weight:700; font-size: .98rem; margin: 2px 0 4px; color:#eafffb; }
+.author{ font-size: .9rem; color: var(--muted); margin: 0; }
+.year{ font-size: .8rem; color: var(--muted); margin-top: 6px; }
+
+/* Styling empty state */
+.empty{
+  color: var(--muted); text-align:center; padding: 20px;
+  border: 1px dashed var(--card-border); border-radius: 12px;
+}
+
+/* ===== MODAL (opaque + above navbar + lower on screen) ===== */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  z-index: 1000;                 /* above .nav (z-index: 10) */
+}
+.modal[aria-hidden="false"]{ display: block; }
+
+/* darker backdrop */
+.modal__backdrop{
+  position:absolute; inset:0;
+  background: rgba(0,0,0,0.75);
+}
+
+/* solid dialog with internal scroll if needed */
+.modal__dialog{
+  position: relative;
+  max-width: 780px;
+  margin: 12vh auto 6vh;         /* push dialog lower */
+  padding: 18px;
+  background: #0f1b27;           /* opaque */
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  max-height: 76vh;              /* keep within viewport */
+  overflow: auto;                /* scroll inside if content is tall */
+}
+
+/* bigger, easier-to-tap close button */
+.modal__close{
+  position:absolute; top:10px; right:12px;
+  width: 36px; height: 36px;
+  border:0; border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  color: var(--text); font-size: 22px; line-height: 1;
+  display:flex; align-items:center; justify-content:center;
+  cursor: pointer;
+}
+.modal__close:hover { background: rgba(255,255,255,0.18); }
+
+/* modal content */
+.modal__header{ display:flex; gap:14px; align-items:flex-start; }
+.modal__cover{ width: 120px; height: 160px; object-fit: cover; border-radius: 10px; border:1px solid var(--card-border); }
+.modal__title{ margin: 0 0 6px; }
+.modal__sectionTitle{ margin: 14px 0 8px; }
+
+/* Reviews inside modal */
+.reviews-list .review {
+  padding: 6px 0;
+  border-top: 1px dashed rgba(255,255,255,0.18);
+}
+.reviews-list .review:first-child { border-top: 0; padding-top: 0; }
+.review-head { display:flex; gap:8px; align-items:center; }
+.review-time { margin-left:auto; font-size:.85rem; }
+.review-text { margin-top:2px; }
+
+/* Review form */
+.review-form { display:grid; gap:6px; margin-top: 8px; }
+.review-form-grid{
+  display:grid; grid-template-columns: 1fr 120px; gap:6px;
+}
+.review-form input,
+.review-form textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+}
+.review-form button {
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 10px;
+  font-weight: 700;
+  color: #012326;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2) 60%, var(--accent-3));
+  cursor: pointer;
+}
+
+/* Preventing background scroll while modal open (toggle .modal-open via JS) */
+body.modal-open { overflow: hidden; }
+
+/* Adapting layout for small screens */
+@media (max-width: 640px){
+  .grid-2{ grid-template-columns: 1fr; }
+  .cover{ height: 220px; }
+  .modal__dialog{
+    margin: calc(9vh + 56px) 10px 6vh; /* more top space on phones */
+    max-height: 82vh;
+  }
+}
+.modal__sectionHeader{
+  margin-top: 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.chip-btn{
+  padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08); color: var(--text); cursor: pointer; font-weight: 600;
+}
+.chip-btn:hover{ background: rgba(255,255,255,0.14); }
