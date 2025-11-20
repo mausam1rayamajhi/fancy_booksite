@@ -28,6 +28,8 @@ def get_logs_db_conn():
 
 
 def _write_log_row(function_name, status, message=None, execution_time=None, extra=None):
+    if os.environ.get("DISABLE_DB_LOGGING") == "1":
+        return
     try:
         http_method = path = user_agent = None
         if has_request_context():
@@ -110,11 +112,10 @@ def create_app(config: dict | None = None):
     if not os.path.isabs(DB_PATH):
         DB_PATH = os.path.join(app.root_path, DB_PATH)
 
-    MONGODB_URI = cfg.get(
-        "MONGODB_URI", os.environ.get("MONGODB_URI", "mongodb://127.0.0.1:27017")
-    )
-    MONGO_DB_NAME = cfg.get("MONGO_DB_NAME", os.environ.get("MONGO_DB_NAME", "books_app"))
-    REVIEWS_COLL = cfg.get("REVIEWS_COLL", os.environ.get("REVIEWS_COLL", "reviews"))
+    MONGODB_URI = os.environ.get("MONGO_URL")
+    MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME")
+    REVIEWS_COLL = os.environ.get("REVIEW_COLL")
+
 
     # SQLite helpers (books/authors) 
     def get_db():
