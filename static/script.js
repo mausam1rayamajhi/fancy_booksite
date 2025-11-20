@@ -1,17 +1,40 @@
-//Globals & Utilities 
 const DEFAULT_COVER =
-  "https://images.rawpixel.com/image_png_social_landscape/" +
-  "czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQv" +
-  "bHIvam9iNjgzLTAwMzEucG5n.png";
+  "https://images.rawpixel.com/image_png_social_landscape/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvam9iNjgzLTAwMzEucG5n.png";
 
-async function fetchJSON(url, opts) {
-  const res = await fetch(
-    url,
-    Object.assign({ headers: { "Content-Type": "application/json" } }, opts || {})
-  );
+const PALETTES = [
+  ["#4f46e5", "#0ea5e9"],
+  ["#22c55e", "#86efac"],
+  ["#f97316", "#fb923c"],
+  ["#ec4899", "#f472b6"],
+  ["#6366f1", "#8b5cf6"],
+  ["#14b8a6", "#2dd4bf"],
+  ["#a855f7", "#d946ef"]
+];
+
+const ANGLES = ["45deg", "120deg", "180deg", "200deg"];
+
+function hashInt(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (h * 31 + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+function coverBackground(title) {
+  const h = hashInt(title);
+  const palette = PALETTES[h % PALETTES.length];
+  const angle = ANGLES[h % ANGLES.length];
+  return `linear-gradient(${angle}, ${palette[0]}, ${palette[1]})`;
+}
+
+async function fetchJSON(url, opts = {}) {
+  const res = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
+    ...opts
+  });
   if (!res.ok) {
-    let text = await res.text().catch(() => "");
-    throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
+    throw new Error(`HTTP ${res.status}`);
   }
   return await res.json();
 }
@@ -21,113 +44,95 @@ function escapeHtml(str) {
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+    .replaceAll('"', "&quot;");
 }
 
-//  Cards
 function cardHTML(book) {
-  const img = (book.image_url && book.image_url.trim()) || DEFAULT_COVER;
+  const title = book.title || "Untitled";
   const authors = book.authors || "Unknown";
   const year = book.publication_year ?? "";
+  const bg = coverBackground(title);
+  const safeBook = JSON.stringify(book).replaceAll("'", "&apos;");
 
   return `
-  <article class="card" data-book='${JSON.stringify(book).replaceAll("'", "&apos;")}'>
-    <img class="cover" src="${img}" alt="Cover of ${escapeHtml(book.title)}" loading="lazy">
-    <div class="meta">
-      <div class="title">${escapeHtml(book.title)}</div>
-      <p class="author">${escapeHtml(authors)}</p>
-      ${year !== "" ? `<div class="year">${escapeHtml(String(year))}</div>` : ""}
-    </div>
-  </article>`;
+    <article class="card" data-book='${safeBook}'>
+      <div class="cover-auto" style="background:${bg}">
+        <div class="cover-auto__title">${escapeHtml(title)}</div>
+      </div>
+      <div class="meta">
+        <div class="title">${escapeHtml(title)}</div>
+        <p class="author">${escapeHtml(authors)}</p>
+        ${year ? `<div class="year">${escapeHtml(String(year))}</div>` : ""}
+      </div>
+    </article>`;
 }
 
 function renderShelfPayload(payload) {
   const shelf = document.getElementById("shelf");
   const rc = document.getElementById("resultCount");
-  const items = (payload && payload.items) || [];
+  const items = payload.items || [];
 
-  if (!shelf) return;
-
-  if (items.length === 0) {
+  if (!items.length) {
     if (rc) rc.textContent = "0 results";
-    shelf.innerHTML = `<div class="empty">No books found.</div>`;
+    if (shelf) {
+      shelf.innerHTML = `<div class="empty">No books found.</div>`;
+    }
     return;
   }
 
   if (rc) rc.textContent = `${items.length} result${items.length === 1 ? "" : "s"}`;
-  shelf.innerHTML = items.map(cardHTML).join("");
+  if (shelf) {
+    shelf.innerHTML = items.map(cardHTML).join("");
 
-  // open modal on click (robust JSON parse)
-  shelf.querySelectorAll(".card").forEach((el) => {
-    const raw = (el.getAttribute("data-book") || "").replaceAll("&apos;", "'");
-    const book = JSON.parse(raw);
-    el.addEventListener("click", () => openBookModal(book));
-  });
+    shelf.querySelectorAll(".card").forEach((el) => {
+      const raw = el.getAttribute("data-book").replaceAll("&apos;", "'");
+      const book = JSON.parse(raw);
+      el.addEventListener("click", () => openBookModal(book));
+    });
+  }
 }
 
 async function loadBooks(q = "", limit = "all") {
   const params = new URLSearchParams();
-  if (q) params.set("q", q);
-  if (limit != null) params.set("limit", String(limit));
-  const url = `/api/books${params.toString() ? "?" + params.toString() : ""}`;
-  const payload = await fetchJSON(url);
-  renderShelfPayload(payload);
-}
-
-// Adding Book Flow 
-function validateForm({ title, author, publication_year }) {
-  const errs = [];
-  if (!title) errs.push("Title");
-  if (!author) errs.push("Author");
-  if (publication_year === "" || publication_year === null || publication_year === undefined) {
-    errs.push("Publication Year");
-  } else if (!/^\d+$/.test(String(publication_year))) {
-    errs.push("Publication Year (must be an integer)");
-  }
-  return errs;
+  if (q.trim()) params.set("q", q);
+  params.set("limit", limit);
+  const data = await fetchJSON(`/api/books?${params}`);
+  renderShelfPayload(data);
 }
 
 async function addBook() {
-  const title = document.getElementById("bookTitle")?.value.trim() || "";
-  const author = document.getElementById("authorName")?.value.trim() || "";
-  const publication_year = document.getElementById("publicationYear")?.value.trim() || "";
-  const image_url = document.getElementById("imageUrl")?.value.trim() || "";
+  const title = document.getElementById("bookTitle").value.trim();
+  const author = document.getElementById("authorName").value.trim();
+  const publication_year = document.getElementById("publicationYear").value.trim();
+  const image_url = document.getElementById("imageUrl").value.trim();
 
-  const errors = validateForm({ title, author, publication_year });
-  if (errors.length) {
-    alert("Please correct the following:\n• " + errors.join("\n• "));
+  if (!title || !author || !publication_year) {
+    alert("Title, Author, and Publication Year are required.");
     return;
   }
 
-  const payload = {
-    title,
-    author,
-    publication_year: parseInt(publication_year, 10),
-    image_url: image_url || null
-  };
+  await fetchJSON("/api/books", {
+    method: "POST",
+    body: JSON.stringify({
+      title,
+      author,
+      publication_year: Number(publication_year),
+      image_url: image_url || null
+    })
+  });
 
-  try {
-    await fetchJSON("/api/books", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
+  ["bookTitle", "authorName", "publicationYear", "imageUrl"].forEach((id) => {
+    document.getElementById(id).value = "";
+  });
 
-    const clear = (id) => { const el = document.getElementById(id); if (el) el.value = ""; };
-    ["bookTitle", "authorName", "publicationYear", "imageUrl"].forEach(clear);
-
-    // CHANGED: after adding, reloading full list
-    await loadBooks("", "all");
-  } catch (err) {
-    console.error(err);
-    alert("Failed to add book. " + err.message);
-  }
+  await loadBooks("", "all");
 }
 
-//Modal: book details + reviews
 const modal = {
   root: null,
-  cover: null,
+  coverImg: null,
+  coverAuto: null,
+  coverAutoTitle: null,
   title: null,
   authors: null,
   year: null,
@@ -135,14 +140,15 @@ const modal = {
   form: null,
   toggleBtn: null,
   currentBookId: null,
-  showAll: false,
-  cachedReviews: null
+  cachedReviews: null,
+  showAll: false
 };
 
 function initModalRefs() {
-  if (modal.root) return;
   modal.root = document.getElementById("bookModal");
-  modal.cover = document.getElementById("modalCover");
+  modal.coverImg = document.getElementById("modalCover");
+  modal.coverAuto = document.getElementById("modalCoverAuto");
+  modal.coverAutoTitle = document.querySelector("#modalCoverAuto .modal__cover-title");
   modal.title = document.getElementById("modalTitle");
   modal.authors = document.getElementById("modalAuthors");
   modal.year = document.getElementById("modalYear");
@@ -150,165 +156,140 @@ function initModalRefs() {
   modal.form = document.getElementById("modalReviewForm");
   modal.toggleBtn = document.getElementById("modalToggleAll");
 
-  if (!modal.root) return;
-
-  // close handlers
-  modal.root.querySelectorAll("[data-close]").forEach(btn =>
+  modal.root.querySelectorAll("[data-close]").forEach((btn) =>
     btn.addEventListener("click", closeBookModal)
   );
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && modal.root.getAttribute("aria-hidden") === "false") {
-      closeBookModal();
+
+  modal.form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(modal.form);
+    const reviewer = (fd.get("reviewer") || "").toString().trim();
+    const rating = Number(fd.get("rating"));
+    const text = (fd.get("text") || "").toString().trim();
+
+    if (!reviewer || !rating || !text) {
+      alert("Please fill all review fields.");
+      return;
     }
+
+    await fetchJSON("/api/reviews", {
+      method: "POST",
+      body: JSON.stringify({
+        book_id: modal.currentBookId,
+        reviewer,
+        rating,
+        text
+      })
+    });
+
+    modal.form.reset();
+    loadReviews(modal.currentBookId);
   });
 
-  // submitting review (then refreshing list, keeping current showAll mode)
-  if (modal.form) {
-    modal.form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const reviewer = modal.form.querySelector('input[name=reviewer]')?.value.trim() || "";
-      const rating = modal.form.querySelector('input[name=rating]')?.value.trim() || "";
-      const text = modal.form.querySelector('textarea[name=text]')?.value.trim() || "";
-      if (!reviewer || !rating || !text) {
-        alert("Please fill all review fields.");
-        return;
-      }
-      await fetchJSON("/api/reviews", {
-        method: "POST",
-        body: JSON.stringify({
-          book_id: modal.currentBookId,
-          reviewer,
-          rating: Number(rating),
-          text
-        })
-      });
-      modal.form.reset();
-      await loadReviews(modal.currentBookId); // respects modal.showAll
-      modal.reviewsBox?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    });
-  }
-
-  // toggle Show all / Show less
-  if (modal.toggleBtn) {
-    modal.toggleBtn.addEventListener("click", () => {
-      modal.showAll = !modal.showAll;
-      renderReviews(modal.cachedReviews);
-    });
-  }
+  modal.toggleBtn.addEventListener("click", () => {
+    modal.showAll = !modal.showAll;
+    renderReviews(modal.cachedReviews);
+  });
 }
 
 function openBookModal(book) {
-  initModalRefs();
+  if (!modal.root) initModalRefs();
+
   modal.currentBookId = book.book_id;
-  modal.showAll = false; // starts with "recent 3"
+  modal.title.textContent = book.title;
+  modal.authors.textContent = book.authors || "Unknown";
+  modal.year.textContent = book.publication_year || "";
 
-  if (modal.cover) {
-    modal.cover.src = (book.image_url && book.image_url.trim()) || DEFAULT_COVER;
-    modal.cover.alt = `Cover of ${book.title}`;
+  if (book.image_url && book.image_url.trim()) {
+    modal.coverImg.style.display = "block";
+    modal.coverImg.src = book.image_url.trim();
+    modal.coverImg.onerror = () => {
+      modal.coverImg.style.display = "none";
+      modal.coverAuto.style.display = "flex";
+      modal.coverAuto.style.background = coverBackground(book.title);
+      modal.coverAutoTitle.textContent = book.title;
+    };
+    modal.coverAuto.style.display = "none";
+  } else {
+    modal.coverImg.style.display = "none";
+    modal.coverAuto.style.display = "flex";
+    modal.coverAuto.style.background = coverBackground(book.title);
+    modal.coverAutoTitle.textContent = book.title;
   }
-  if (modal.title) modal.title.textContent = book.title;
-  if (modal.authors) modal.authors.textContent = book.authors || "Unknown";
-  if (modal.year) modal.year.textContent = book.publication_year ? String(book.publication_year) : "";
 
-  if (modal.root) {
-    modal.root.setAttribute("aria-hidden", "false");
-  }
+  modal.root.setAttribute("aria-hidden", "false");
   document.body.classList.add("modal-open");
   loadReviews(book.book_id);
 }
 
 function closeBookModal() {
-  if (!modal.root) return;
   modal.root.setAttribute("aria-hidden", "true");
   document.body.classList.remove("modal-open");
 }
 
-//Reviews (MongoDB)
 async function loadReviews(bookId) {
-  if (modal.reviewsBox) {
-    modal.reviewsBox.innerHTML = `<div class="muted">Loading reviews...</div>`;
-  }
-  try {
-    const data = await fetchJSON(`/api/reviews?book_id=${bookId}`);
-    renderReviews(data);
-  } catch (e) {
-    console.error("Failed to load reviews", e);
-    if (modal.reviewsBox) {
-      modal.reviewsBox.innerHTML = `<div class="error">Failed to load reviews.</div>`;
-    }
-    if (modal.toggleBtn) modal.toggleBtn.style.display = "none";
-  }
+  modal.reviewsBox.innerHTML = "<div class='muted'>Loading...</div>";
+  const data = await fetchJSON(`/api/reviews?book_id=${bookId}`);
+  modal.cachedReviews = data;
+  renderReviews(data);
 }
 
 function renderReviews(data) {
-  modal.cachedReviews = data;
-  const items = (data && data.items) || [];
-  const total = data && typeof data.count === "number" ? data.count : items.length;
+  const items = data.items || [];
+  const visible = modal.showAll ? items : items.slice(0, 3);
 
-  // API returns newest first; for "recent", show the first 3
-  const toShow = modal.showAll ? items : items.slice(0, 3);
-
-  if (modal.reviewsBox) {
-    if (total === 0) {
-      modal.reviewsBox.innerHTML = `<div class="muted">No reviews yet.</div>`;
-    } else {
-      modal.reviewsBox.innerHTML = toShow.map(r => `
+  if (!items.length) {
+    modal.reviewsBox.innerHTML = "<div class='muted'>No reviews yet.</div>";
+  } else {
+    modal.reviewsBox.innerHTML = visible
+      .map(
+        (r) => `
         <div class="review">
           <div class="review-head">
             <strong>${escapeHtml(r.reviewer)}</strong>
             <span class="muted">(${r.rating}/5)</span>
-            <span class="muted review-time">${r.created_at ? new Date(r.created_at).toLocaleString() : ""}</span>
+            <span class="muted review-time">${
+              r.created_at ? new Date(r.created_at).toLocaleString() : ""
+            }</span>
           </div>
           <div class="review-text">${escapeHtml(r.text)}</div>
         </div>
-      `).join("");  // closing backtick now in the right place
-    }
+      `
+      )
+      .join("");
   }
 
-  if (modal.toggleBtn) {
-    if (total > 3) {
-      modal.toggleBtn.style.display = "inline-flex";
-      modal.toggleBtn.textContent = modal.showAll ? "Show less" : `Show all (${total})`;
-    } else {
-      modal.toggleBtn.style.display = "none";
-    }
+  if (items.length > 3) {
+    modal.toggleBtn.style.display = "inline";
+    modal.toggleBtn.textContent = modal.showAll
+      ? "Show less"
+      : `Show all (${items.length})`;
+  } else {
+    modal.toggleBtn.style.display = "none";
   }
 }
 
-
-// Wire-up
 document.addEventListener("DOMContentLoaded", async () => {
   const addBtn = document.getElementById("addBtn");
+  const searchForm = document.getElementById("searchForm");
+  const showAllBtn = document.getElementById("showAllBtn");
+  const searchInput = document.getElementById("searchInput");
+
   if (addBtn) addBtn.addEventListener("click", addBook);
 
-  const form = document.getElementById("searchForm");
-  if (form) {
-    form.addEventListener("submit", async (e) => {
+  if (searchForm) {
+    searchForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      const q = document.getElementById("searchInput")?.value.trim() || "";
-      await loadBooks(q, "all");
+      loadBooks(searchInput.value.trim());
     });
   }
 
-  const showAllBtn = document.getElementById("showAllBtn");
   if (showAllBtn) {
-    showAllBtn.addEventListener("click", async () => {
-      const si = document.getElementById("searchInput");
-      if (si) si.value = "";
-      await loadBooks("", "all");
+    showAllBtn.addEventListener("click", () => {
+      searchInput.value = "";
+      loadBooks("");
     });
   }
 
-  const si = document.getElementById("searchInput");
-  if (si) {
-    si.addEventListener("keydown", async (e) => {
-      if (e.key === "Escape") {
-        e.target.value = "";
-        await loadBooks("", "all");
-      }
-    });
-  }
-
-  // CHANGED: Initial auto-load = all books
   await loadBooks("", "all");
 });
