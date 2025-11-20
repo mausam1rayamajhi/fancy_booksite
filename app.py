@@ -80,7 +80,7 @@ def log_call(func):
     return wrapper
 
 
-# ---- Ending Logging helpers ----
+# Ending Logging helpers
 
 # default cover if a book has no image_url
 DEFAULT_COVER = (
@@ -112,9 +112,15 @@ def create_app(config: dict | None = None):
     if not os.path.isabs(DB_PATH):
         DB_PATH = os.path.join(app.root_path, DB_PATH)
 
-    MONGODB_URI = os.environ.get("MONGO_URL")
-    MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME")
-    REVIEWS_COLL = os.environ.get("REVIEW_COLL")
+    MONGODB_URI = (
+        os.environ.get("MONGO_URL")
+        or os.environ.get("MONGODB_URI")
+        or "mongodb://127.0.0.1:27017/"
+    )
+    MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", "books_app")
+    REVIEWS_COLL = os.environ.get("REVIEWS_COLL", "reviews")
+
+
 
 
     # SQLite helpers (books/authors) 
